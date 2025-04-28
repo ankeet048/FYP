@@ -1,66 +1,26 @@
-  
+version: '3.1'
 
 services:
-  nginx:
-    build:
-      context: ./custom-ngnix
-      dockerfile: Dockerfile
-    container_name: login
-    ports:
-      - published: 8080
-        target: 80
-    networks:
-      - monitoring
 
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
+  mongo:
+    image: mongo:6
+    restart: always
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    #      MONGO_INITDB_DATABASE: init
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./alert.rules:/etc/prometheus/alert.rules
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--web.enable-lifecycle'
-    networks:
-      - monitoring
+      - ./db_data/:/data/db/
+      - /etc/timezone:/etc/timezone:ro
 
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: alertmanager
+  mongo-express:
+    image: mongo-express
+    restart: always
+    container_name: mongo_ui
     ports:
-      - "9093:9093"
-    volumes:
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--log.level=debug'
-    networks:
-      - monitoring
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    ports:
-      - "9100:9100"
-    networks:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./provisioning:/etc/grafana/provisioning
-      - grafana-storage:/var/lib/grafan 
-    networks:
-      - monitoring
-
-networks:  
-  monitoring:
-    name: monitoring
-    driver: bridge  
-
-volumes:
-  grafana-storage:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
