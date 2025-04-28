@@ -1,59 +1,66 @@
-version: '3'
+  
+
 services:
-  elasticsearch:
-    image: elasticsearch:7.9.1
-    container_name: elasticsearch
+  nginx:
+    build:
+      context: ./custom-ngnix
+      dockerfile: Dockerfile
+    container_name: login
     ports:
-      - "9200:9200"
-      - "9300:9300"
-    volumes:
-      - test:/usr/share/elasticsearch/data/
-      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
-    environment:
-      - discovery.type=single-node
-      - http.host=0.0.0.0
-      - transport.host=0.0.0.0
-      - xpack.security.enabled=false
-      - xpack.monitoring.enabled=false
-      - cluster.name=elasticsearch
-      - bootstrap.memory_lock=true
+      - published: 8080
+        target: 80
     networks:
-      - elk
+      - monitoring
 
-  logstash:
-    image: logstash:7.9.1
-    container_name: logstash
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
     ports:
-      - "5044:5044"
-      - "9600:9600"
+      - "9090:9090"
     volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ./logstash.yml:/usr/share/logstash/config/logstash.yml
-      - ls:/usr/share/logstash/data
-
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert.rules:/etc/prometheus/alert.rules
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
     networks:
-      - elk
-    depends_on:
-      - elasticsearch
+      - monitoring
 
-  kibana:
-    image: kibana:7.9.1
-    container_name: kibana
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
     ports:
-      - "5601:5601"
+      - "9093:9093"
     volumes:
-      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
-      - kb:/usr/share/kibana/data
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--log.level=debug'
     networks:
-      - elk
-    depends_on:
-      - elasticsearch
+      - monitoring
 
-networks:
-  elk:
-    driver: bridge
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning
+      - grafana-storage:/var/lib/grafan 
+    networks:
+      - monitoring
+
+networks:  
+  monitoring:
+    name: monitoring
+    driver: bridge  
 
 volumes:
-  test:
-  ls:
-  kb:
+  grafana-storage:

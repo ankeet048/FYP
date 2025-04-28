@@ -1,0 +1,20 @@
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'  # use your SMTP server and port
+  smtp_from: 'ankitfyp3@gmail.com'           # sender email
+  smtp_auth_username: 'ankitfyp3@gmail.com'
+  smtp_auth_password: 'mndzfowvicfwoasa'
+
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  receiver: 'email_alerts'
+
+receivers:
+  - name: 'email_alerts'
+    email_configs:
+      - to: 'ankitfyp3@gmail.com'
+        send_resolved: true
+
+

@@ -1,0 +1,102 @@
+groups:
+- name: system-alerts
+  rules:
+  # CPU Alerts
+  - alert: HighCpuUsage
+    expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 30
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage on {{ $labels.instance }}"
+      description: "CPU usage is {{ $value }}% for 1 minute (threshold: 30%)"
+
+  - alert: CpuSaturation
+    expr: rate(node_load5[5m]) / count by(instance)(node_cpu_seconds_total{mode="idle"}) > 2
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: "CPU saturation on {{ $labels.instance }}"
+      description: "Load average is {{ $value }}x cores for 10 minutes"
+
+
+  # Memory Alerts
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage on {{ $labels.instance }}"
+      description: "Memory usage is {{ $value }}% for 5 minutes (threshold: 85%)"  
+
+
+
+  # Disk Alerts
+  - alert: LowDiskSpace
+    expr: (node_filesystem_avail_bytes{mountpoint!~"/(run|var)/.*|/sys/fs/cgroup"} / node_filesystem_size_bytes{mountpoint!~"/(run|var)/.*|/sys/fs/cgroup"} * 100) < 10
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Low disk space on {{ $labels.mountpoint }} ({{ $labels.instance }})"
+      description: "Only {{ $value }}% space left on {{ $labels.mountpoint }}"
+
+  - alert: DiskWillFillIn4Hours
+    expr: predict_linear(node_filesystem_free_bytes{mountpoint!~"/(run|var)/.*|/sys/fs/cgroup"}[1h], 4*3600) < 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Disk on {{ $labels.mountpoint }} will fill in 4 hours"
+      description: "Based on current write rate, disk will be full in 4 hours"
+
+# Service Alerts
+  - alert: ServiceDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Service {{ $labels.job }} down on {{ $labels.instance }}"
+      description: "Service has been down for 1 minute"
+
+  # Nginx Specific Alerts (if using nginx exporter)
+  - alert: HighNginxErrorRate
+    expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) > 0.05
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High error rate on Nginx ({{ $labels.instance }})"
+      description: "5xx error rate is {{ $value }}%"
+
+  # Blackbox Exporter Alerts (if monitoring HTTP endpoints)
+  - alert: EndpointDown
+    expr: probe_success == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Endpoint {{ $labels.instance }} is down"
+      description: "Endpoint failed to respond ({{ $labels.job }})"
+
+  - alert: HighEndpointLatency
+    expr: probe_duration_seconds > 2
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High latency on {{ $labels.instance }}"
+      description: "Latency is {{ $value }} seconds"
+
+  # Custom Business Metrics Example
+  - alert: HighOrderFailureRate
+    expr: rate(order_failures_total[5m]) / rate(order_attempts_total[5m]) > 0.1
+    for: 15m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High order failure rate ({{ $value }}%)"
+      description: "More than 10% of orders are failing"
