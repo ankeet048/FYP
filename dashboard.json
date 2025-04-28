@@ -1,0 +1,30 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "type": "graph",
+      "title": "Nginx Requests",
+      "targets": [
+        {
+          "expr": "rate(nginx_http_requests_total[5m])",
+          "interval": "",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ],
+  "schemaVersion": 26,
+  "version": 1,
+  "title": "Nginx Dashboard",
+  "uid": "nginx-dashboard"
+}
